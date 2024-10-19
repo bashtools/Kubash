@@ -68,9 +68,10 @@ There are four functions for programming the parser:
 
 ## MOK
 
-I gathered all the parser programming commands in the next code block so it's
-easy to see the full user interface definition. The callback functions can be
-viewed by doing `make tags` and then, for example, `vim -t BI_process_options`
+I gathered all the parser programming commands used in
+[mok](https://github.com/bashtools/mok) in the next code block so it's easy to
+see the full user interface definition. The callback functions can be viewed by
+doing `make tags` and then, for example, `vim -t BI_process_options`
 - will take you directly to that function.
 
 ```bash
@@ -124,7 +125,7 @@ viewed by doing `make tags` and then, for example, `vim -t BI_process_options`
 
 I have a small Bash script called cmdline-player that has grown complex enough
 to need a few command line options. Cmdline-player is used to create the
-screencasts in My Own Kind.
+screencasts in [kubernetes-the-hard-way-in-containers](https://github.com/bashtools/kubernetes-the-hard-way-in-containers).
 
 I was lazy when writing cmdline-player. I thought it would be easier and
 shorter than it is now, even though it's only about 260 lines long.
