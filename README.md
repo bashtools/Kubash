@@ -21,7 +21,7 @@ program --global-options COMMAND --command-options
 [MOK](https://github.com/bashtools/mok) uses Kubash for command line parsing
 and uses the same Golang style of code.
 
-# How to use the My Own Kind Parser in your own Code
+# How to use the Kubash Parser in your own Code
 
 ## Overview
 
