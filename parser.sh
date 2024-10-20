@@ -197,7 +197,7 @@ _PA_new() {
 
 # _PA_check_token checks for a valid token in arg2 state. The logic is
 # most easily understood by reading the full original version at:
-# https://github.com/mclarkson/my-own-kind/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
+# https://github.com/bashtools/mokctl-docs/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
 # This function is a reduction of all the check_xxx_token functions.
 # Args: arg1 - the token to check.
 #       arg2 - the current state.
