@@ -51,9 +51,29 @@ There are four functions for programming the parser:
   
   Add a callback to your code that processes options.
 
+  ```bash
+  # PA_add_option_callback adds a callback to the list of callbacks used for
+  # processing options.
+  # Args: arg1 - Null string (for global options), COMMAND or COMMANDSUBCOMMAND.
+  #       arg2 - The function to call.
+  PA_add_option_callback() {
+    _PA[optscallbacks]+="$1,$2 "
+  }
+  ```
+
 * PA_add_usage_callback()
   
   Add a callback to your code that shows COMMAND or SUBCOMMAND usage.
+
+  ```bash
+  # PA_add_usage_callback adds a callback to the list of callbacks used for
+  # output of help text.
+  # Args: arg1 - Null string (for global help), COMMAND or COMMANDSUBCOMMAND.
+  #       arg2 - The function to call.
+  PA_add_usage_callback() {
+    _PA[usagecallbacks]+="$1,$2 "
+  }
+  ```
 
 * PA_add_state()
   
@@ -61,18 +81,38 @@ There are four functions for programming the parser:
   if the state matches. The parser will add the COMMAND and SUBCOMMAND for the
   program to retrieve via the getters, PA_command() and PA_subcommand().
 
+  ```bash
+  # PA_add_state adds a callback to the list of callbacks used for
+  # programming the state machine.
+  # Args: arg1 - Current state to match.
+  #       arg2 - The value of the state to match.
+  #       arg3 - The new state if arg1 and arg2 match.
+  #       arg4 - The function to call, optional.
+  PA_add_state() {
+    _PA[statecallbacks]+="$1,$2,$3,$4 "
+  }
+  ```
 * PA_set_state()
   
   This defaults to COMMAND, but can be set to SUBCOMMAND, or ARG1 for a more
   traditional Unix style of option processing, shown later.
+
+  ```bash
+  # PA_set_state setter sets the initial state of the parser, which should be one
+  # of COMMAND, SUBCOMMAND, or ARG1.
+  # Args: arg1 - the initial state to set.
+  PA_set_state() {
+    _PA[state]="$1"
+  }
+  ```
 
 ## MOK
 
 I gathered all the parser programming commands used in
 [mok](https://github.com/bashtools/mok) in the next code block so it's easy to
 see the full user interface definition. The callback functions can be viewed by
-doing `make tags` and then, for example, `vim -t BI_process_options`
-- will take you directly to that function.
+doing `make tags` and then, for example, `vim -t BI_process_options` will take
+you directly to that function.
 
 ```bash
   # Program the parser's state machine
