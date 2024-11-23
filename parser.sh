@@ -6,8 +6,11 @@ declare -A _PA
 
 # Declare externally defined variables ----------------------------------------
 
-# Defined in ER (globals.sh)
-declare OK ERROR STDERR
+# Define globals
+OK=0
+ERROR=1
+STDERR=/dev/stderr
+STOP=2
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -82,6 +85,15 @@ PA_add_state() {
   _PA[statecallbacks]+="$1,$2,$3,$4 "
 }
 
+# PA_add_run_callback adds a callback to the list of callbacks used for
+# running the user defined entrypoint function.
+# Args: arg1 - The value of the state to match. Probably like:
+#              "commandsubcommand" "function"
+#       arg2 - The function to call.
+PA_add_run_callback() {
+  _PA[runcallbacks]+="$1,$2 "
+}
+
 # PA_run implements an interleaved state machine to process the
 # user request. It allows for strict checking of arguments and args. All
 # command line arguments are processed in order from left to right.
@@ -98,6 +110,8 @@ PA_add_state() {
 #
 # Args: arg1-N - The arguments given to mok by the user on the command line
 PA_run() {
+
+  local retval=${OK}
 
   set -- "$@"
   local ARGN=$# ARGNUM=0 retval=0
@@ -120,7 +134,7 @@ PA_run() {
         _PA_check_token "${1}" "COMMAND" "command"
         [[ $? -eq ${ERROR} ]] && {
           PA_usage
-          printf 'Invalid COMMAND, "%s".\n\n' "$1" >"${STDERR}"
+          printf '\nInvalid COMMAND, "%s".\n' "$1" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
@@ -128,7 +142,7 @@ PA_run() {
         _PA_check_token "$1" "SUBCOMMAND" "subcommand"
         [[ $? -eq ${ERROR} ]] && {
           PA_usage
-          printf 'Invalid SUBCOMMAND for %s, "%s".\n\n' "${_PA[command]}" "${1}" \
+          printf '\nInvalid SUBCOMMAND for %s, "%s".\n' "${_PA[command]}" "${1}" \
             >"${STDERR}"
           return "${ERROR}"
         }
@@ -138,14 +152,14 @@ PA_run() {
         _PA_check_token "${1}" "ARG${ARGNUM}"
         [[ $? -eq ${ERROR} ]] && {
           PA_usage
-          printf 'Invalid ARG1 for %s %s, "%s".\n\n' "${_PA[command]}" \
+          printf '\nInvalid ARG1 for %s %s, "%s".\n' "${_PA[command]}" \
             "${_PA[subcommand]}" "${1}" >"${STDERR}"
           return "${ERROR}"
         }
         ;;
       END)
         PA_usage
-        printf 'ERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
+        printf '\nERROR No more args expected, "%s" is unexpected for "%s %s"\n' \
           "${1}" "${_PA[command]}" "${_PA[subcommand]}" >"${STDERR}"
         return "${ERROR}"
         ;;
@@ -159,6 +173,17 @@ PA_run() {
     shift 1
     ARGN=$((ARGN - 1))
   done
+
+  # Run the user defined entrypoint function:
+  for item in ${_PA[runcallbacks]}; do
+    IFS=, read -r stateval func <<<"${item}"
+    [[ ${stateval} == "${_PA[command]}${_PA[subcommand]}" ]] && {
+      eval "${func}" || retval=$?
+      return "${retval}"
+    }
+  done
+
+  PA_usage
 
   return "${OK}"
 }
@@ -191,13 +216,15 @@ _PA_new() {
   _PA[state]="COMMAND"
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
+  _PA[statecallbacks]=
+  _PA[runcallbacks]=
   # The return value if the caller asked for an extra shift:
   _PA[shift]=126
 }
 
 # _PA_check_token checks for a valid token in arg2 state. The logic is
 # most easily understood by reading the full original version at:
-# https://github.com/bashtools/mokctl-docs/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
+# https://github.com/mclarkson/my-own-kind/blob/master/docs/package.md#scripted-cluster-creation-and-deletion
 # This function is a reduction of all the check_xxx_token functions.
 # Args: arg1 - the token to check.
 #       arg2 - the current state.
@@ -205,7 +232,7 @@ _PA_new() {
 #              for command and subcommand states.
 _PA_check_token() {
 
-  local item
+  local item runcmd=0
 
   if [[ -n ${_PA[subcommand]} ]]; then
     cmdsubcommand="${_PA[command]}${_PA[subcommand]}"
@@ -226,12 +253,17 @@ _PA_check_token() {
         [[ -n $3 ]] && _PA["$3"]="$1"
         _PA[state]="${newstate}"
         [[ -n ${func} ]] && {
+          runcmd=1
           eval "${func} $1" || return
         }
         return "${OK}"
       }
     }
   done
+
+  [[ ${runcmd} -eq 0 ]] && {
+    return "${ERROR}"
+  }
 }
 
 # _PA_process_option checks that the user-provided option is valid for the
@@ -240,7 +272,7 @@ _PA_check_token() {
 #       arg2 - TODO The value of the option if present, optional.
 _PA_process_option() {
 
-  local item curcmdsubcmd
+  local item curcmdsubcmd retval
 
   curcmdsubcmd="${_PA[command]}${_PA[subcommand]}"
 
@@ -248,7 +280,9 @@ _PA_process_option() {
     IFS=, read -r cmdsubcmd func <<<"${item}"
     [[ ${curcmdsubcmd} == "${cmdsubcmd}" ]] && {
       eval "${func} \"$1\" \"$2\""
-      return $?
+      retval=$?
+      [[ ${retval} -eq "${STOP}" ]] && exit 0
+      return "${retval}"
     }
   done
 
@@ -258,6 +292,4 @@ _PA_process_option() {
 # Initialise _PA
 _PA_new
 
-# vim helpers -----------------------------------------------------------------
-#include globals.sh
 # vim:ft=sh:sw=2:et:ts=2:
