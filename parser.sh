@@ -111,10 +111,30 @@ PA_add_run_callback() {
 # Args: arg1-N - The arguments given to mok by the user on the command line
 PA_run() {
 
-  local retval=${OK}
-
   set -- "$@"
-  local ARGN=$# ARGNUM=0 retval=0
+
+  local arg ARGN=$# retval=${OK}
+  declare -a expanded_args
+
+  # Expand args like -abc to -a -b -c
+  while [ "$ARGN" -ne 0 ]; do
+    arg="$1"
+    if [[ $arg == -[a-zA-Z][a-zA-Z]* ]]; then
+        # Remove the leading dash
+        arg="${arg#-}"
+        # Split the remaining characters and add dashes
+        for i in ${arg//[a-zA-Z]/ -&}; do
+            expanded_args+=("$i")
+        done
+    else
+        expanded_args+=("$arg")
+    fi
+    ARGN=$((ARGN-1))
+    shift 1
+  done
+
+  set -- "${expanded_args[@]}"
+  local ARGN=$# ARGNUM=0
   while [ "${ARGN}" -ne 0 ]; do
     case "$1" in
     --* | -*)
