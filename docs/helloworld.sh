@@ -96,7 +96,7 @@ process_options() {
 # Args: None
 usage() {
   cat <<'EnD'
-Usage: helloworld.sh [command] [-hv]
+Usage: helloworld.sh [-hv] [command]
 
 Global options:
   --help
